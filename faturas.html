@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Importar Fatura</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+
+<div class="container">
+    <main>
+        <h2>📄 Importar Fatura (Equatorial)</h2>
+
+        <input type="file" id="pdfInput" accept="application/pdf">
+
+        <h3>Dados extraídos</h3>
+
+        <div class="card">
+            <label>Unidade Consumidora</label>
+            <input id="uc">
+
+            <label>Mês/Ano</label>
+            <input id="mesAno">
+
+            <label>Vencimento</label>
+            <input id="vencimento">
+
+            <label>Consumo (kWh)</label>
+            <input id="consumo">
+
+            <label>Valor Total (R$)</label>
+            <input id="valor">
+        </div>
+    </main>
+</div>
+
+<script type="module" src="assets/js/pdf-import.js"></script>
+
+</body>
+</html>

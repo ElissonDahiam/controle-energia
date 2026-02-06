@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Controle de Energia</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+
+<header id="top-menu" class="hidden">
+    <h1>⚡ Controle de Energia</h1>
+    <div class="actions">
+        <button onclick="toggleTheme()">🌙/☀️</button>
+        <button onclick="toggleMenu()">📐 Layout</button>
+    </div>
+</header>
+
+<div class="container">
+
+    <nav id="side-menu">
+        <h2>⚡ Energia</h2>
+        <ul>
+  <li><a href="index.html">Dashboard</a></li>
+  <li><a href="empresas.html">Empresas</a></li>
+  <li><a href="lojas.html">Lojas</a></li>
+  <li><a href="unidades.html">Unidades</a></li>
+  <li><a href="faturas.html">Faturas</a></li>
+  <li><a href="relatorios.html">Relatórios</a></li>
+  <li><a href="configuracoes.html">Configurações</a></li>
+</ul>
+       
+        <div class="menu-actions">
+            <button onclick="toggleTheme()">🌙/☀️ Tema</button>
+            <button onclick="toggleMenu()">📐 Menu</button>
+        </div>
+    </nav>
+
+    <main>
+        <h2>Dashboard</h2>
+        <p>Sistema local de controle de contas de energia.</p>
+
+        <div class="cards">
+            <div class="card">
+                <h3>Total do mês</h3>
+                <p>R$ 0,00</p>
+            </div>
+            <div class="card">
+                <h3>Consumo (kWh)</h3>
+                <p>0 kWh</p>
+            </div>
+            <div class="card">
+                <h3>Unidades</h3>
+                <p>0</p>
+            </div>
+        </div>
+    </main>
+
+</div>
+
+<script src="assets/js/app.js"></script>
+</body>
+</html>
