@@ -2,18 +2,30 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Importar Fatura</title>
+    <title>Faturas</title>
     <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body>
 
 <div class="container">
+
+    <nav id="side-menu">
+        <h2>⚡ Energia</h2>
+        <ul>
+            <li><a href="index.html">Dashboard</a></li>
+            <li><a href="empresas.html">Empresas</a></li>
+            <li><a href="lojas.html">Lojas</a></li>
+            <li><a href="unidades.html">Unidades</a></li>
+            <li><a href="faturas.html">Faturas</a></li>
+            <li><a href="relatorios.html">Relatórios</a></li>
+            <li><a href="configuracoes.html">Configurações</a></li>
+        </ul>
+    </nav>
+
     <main>
         <h2>📄 Importar Fatura (Equatorial)</h2>
 
         <input type="file" id="pdfInput" accept="application/pdf">
-
-        <h3>Dados extraídos</h3>
 
         <div class="card">
             <label>Unidade Consumidora</label>
@@ -32,9 +44,10 @@
             <input id="valor">
         </div>
     </main>
+
 </div>
 
 <script type="module" src="assets/js/pdf-import.js"></script>
-
+<script src="assets/js/app.js"></script>
 </body>
 </html>
