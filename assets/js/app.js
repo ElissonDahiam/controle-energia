@@ -5,11 +5,16 @@ const topMenu = document.getElementById("top-menu");
 // ===== TEMA =====
 function toggleTheme() {
     body.classList.toggle("dark");
-    localStorage.setItem("theme", body.classList.contains("dark") ? "dark" : "light");
+    localStorage.setItem(
+        "theme",
+        body.classList.contains("dark") ? "dark" : "light"
+    );
 }
 
 // ===== MENU =====
 function toggleMenu() {
+    if (!sideMenu || !topMenu) return;
+
     sideMenu.classList.toggle("hidden");
     topMenu.classList.toggle("hidden");
 
@@ -26,7 +31,7 @@ function toggleMenu() {
 
     if (theme === "dark") body.classList.add("dark");
 
-    if (menu === "top") {
+    if (menu === "top" && sideMenu && topMenu) {
         sideMenu.classList.add("hidden");
         topMenu.classList.remove("hidden");
     }
