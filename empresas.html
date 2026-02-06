@@ -10,7 +10,7 @@
 <div class="container">
 
   <nav id="side-menu">
-    <h2>⚡ Energi</h2>
+    <h2>⚡ Energia</h2>
     <ul>
       <li><a href="index.html">Dashboard</a></li>
       <li><a href="empresas.html">Empresas</a></li>
@@ -24,7 +24,21 @@
 
   <main>
     <h2>Empresas</h2>
-    <p>Aqui ficará o cadastro de empresas.</p>
+
+    <div class="card">
+      <label>Nome da empresa</label>
+      <input id="empresaNome" placeholder="Ex: Empresa XPTO">
+
+      <label>CNPJ</label>
+      <input id="empresaCnpj" placeholder="00.000.000/0001-00">
+
+      <button>Salvar empresa</button>
+    </div>
+
+    <div class="card">
+      <h3>Empresas cadastradas</h3>
+      <ul id="listaEmpresas"></ul>
+    </div>
   </main>
 
 </div>
