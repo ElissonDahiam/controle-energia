@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Unidades Consumidoras</title>
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+
+<div class="container">
+
+  <nav id="side-menu">
+    <h2>⚡ Energia</h2>
+    <ul>
+      <li><a href="index.html">Dashboard</a></li>
+      <li><a href="empresas.html">Empresas</a></li>
+      <li><a href="lojas.html">Lojas</a></li>
+      <li><a href="unidades.html">Unidades</a></li>
+      <li><a href="faturas.html">Faturas</a></li>
+      <li><a href="relatorios.html">Relatórios</a></li>
+      <li><a href="configuracoes.html">Configurações</a></li>
+    </ul>
+  </nav>
+
+  <main>
+    <h2>Unidades Consumidoras</h2>
+
+    <div class="card">
+      <label>Loja</label>
+      <select id="lojaUC"></select>
+
+      <label>Unidade Consumidora (UC)</label>
+      <input id="numeroUC" placeholder="Ex: 10026875126">
+
+      <label>Distribuidora</label>
+      <input id="distribuidora" value="Equatorial">
+
+      <button>Salvar unidade</button>
+    </div>
+
+    <div class="card">
+      <h3>Unidades cadastradas</h3>
+      <ul id="listaUC"></ul>
+    </div>
+  </main>
+
+</div>
+
+<script src="assets/js/app.js"></script>
+</body>
+</html>

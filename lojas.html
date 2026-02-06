@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Lojas</title>
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+
+<div class="container">
+
+  <nav id="side-menu">
+    <h2>⚡ Energia</h2>
+    <ul>
+      <li><a href="index.html">Dashboard</a></li>
+      <li><a href="empresas.html">Empresas</a></li>
+      <li><a href="lojas.html">Lojas</a></li>
+      <li><a href="unidades.html">Unidades</a></li>
+      <li><a href="faturas.html">Faturas</a></li>
+      <li><a href="relatorios.html">Relatórios</a></li>
+      <li><a href="configuracoes.html">Configurações</a></li>
+    </ul>
+  </nav>
+
+  <main>
+    <h2>Lojas</h2>
+
+    <div class="card">
+      <label>Empresa</label>
+      <select id="empresaLoja">
+        <option>Selecione a empresa</option>
+      </select>
+
+      <label>Nome da loja</label>
+      <input id="nomeLoja" placeholder="Ex: Loja 07">
+
+      <button>Salvar loja</button>
+    </div>
+
+    <div class="card">
+      <h3>Lojas cadastradas</h3>
+      <ul id="listaLojas"></ul>
+    </div>
+  </main>
+
+</div>
+
+<script src="assets/js/app.js"></script>
+</body>
+</html>
