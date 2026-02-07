@@ -27,14 +27,12 @@
 
     <div class="card">
       <label>Empresa</label>
-      <select id="empresaLoja">
-        <option>Selecione a empresa</option>
-      </select>
+      <select id="empresaLoja"></select>
 
       <label>Nome da loja</label>
       <input id="nomeLoja" placeholder="Ex: Loja 07">
 
-      <button>Salvar loja</button>
+      <button onclick="cadastrarLoja()">Salvar loja</button>
     </div>
 
     <div class="card">
@@ -45,6 +43,61 @@
 
 </div>
 
-<script src="assets/js/app.js"></script>
+<!-- 1️⃣ SUPABASE -->
+<script src="assets/js/supabase.js"></script>
+
+<!-- 2️⃣ SCRIPT DA PÁGINA -->
+<script>
+async function carregarEmpresas() {
+  const select = document.getElementById("empresaLoja");
+  select.innerHTML = "";
+
+  const empresas = await listarEmpresas();
+  empresas.forEach(e => {
+    const opt = document.createElement("option");
+    opt.value = e.id;
+    opt.textContent = e.nome;
+    select.appendChild(opt);
+  });
+
+  if (empresas.length > 0) {
+    carregarLojas(empresas[0].id);
+  }
+}
+
+async function carregarLojas(empresa_id) {
+  const lista = document.getElementById("listaLojas");
+  lista.innerHTML = "";
+
+  const lojas = await listarLojas(empresa_id);
+  lojas.forEach(l => {
+    const li = document.createElement("li");
+    li.textContent = l.nome;
+    lista.appendChild(li);
+  });
+}
+
+async function cadastrarLoja() {
+  const empresa_id = document.getElementById("empresaLoja").value;
+  const nome = document.getElementById("nomeLoja").value.trim();
+
+  if (!nome) {
+    alert("Informe o nome da loja");
+    return;
+  }
+
+  await salvarLoja(nome, empresa_id);
+  document.getElementById("nomeLoja").value = "";
+  carregarLojas(empresa_id);
+}
+
+document.getElementById("empresaLoja")
+  .addEventListener("change", e => {
+    carregarLojas(e.target.value);
+  });
+
+carregarEmpresas();
+</script>
+
 </body>
 </html>
