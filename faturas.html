@@ -1,53 +1,123 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <title>Faturas</title>
-    <link rel="stylesheet" href="assets/css/style.css">
+  <meta charset="UTF-8">
+  <title>Faturas</title>
+  <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body>
 
 <div class="container">
 
-    <nav id="side-menu">
-        <h2>⚡ Energia</h2>
-        <ul>
-            <li><a href="index.html">Dashboard</a></li>
-            <li><a href="empresas.html">Empresas</a></li>
-            <li><a href="lojas.html">Lojas</a></li>
-            <li><a href="unidades.html">Unidades</a></li>
-            <li><a href="faturas.html">Faturas</a></li>
-            <li><a href="relatorios.html">Relatórios</a></li>
-            <li><a href="configuracoes.html">Configurações</a></li>
-        </ul>
-    </nav>
+  <nav id="side-menu">
+    <h2>⚡ Energia</h2>
+    <ul>
+      <li><a href="index.html">Dashboard</a></li>
+      <li><a href="empresas.html">Empresas</a></li>
+      <li><a href="lojas.html">Lojas</a></li>
+      <li><a href="unidades.html">Unidades</a></li>
+      <li><a href="faturas.html">Faturas</a></li>
+      <li><a href="relatorios.html">Relatórios</a></li>
+      <li><a href="configuracoes.html">Configurações</a></li>
+    </ul>
+  </nav>
 
-    <main>
-        <h2>📄 Importar Fatura (Equatorial)</h2>
+  <main>
+    <h2>Faturas</h2>
 
-        <input type="file" id="pdfInput" accept="application/pdf">
+    <div class="card">
+      <label>Unidade Consumidora</label>
+      <select id="unidadeSelect"></select>
 
-        <div class="card">
-            <label>Unidade Consumidora</label>
-            <input id="uc">
+      <label>Mês/Ano</label>
+      <input id="mesAno" placeholder="2026-02">
 
-            <label>Mês/Ano</label>
-            <input id="mesAno">
+      <label>Vencimento</label>
+      <input type="date" id="vencimento">
 
-            <label>Vencimento</label>
-            <input id="vencimento">
+      <label>Consumo (kWh)</label>
+      <input type="number" id="consumo">
 
-            <label>Consumo (kWh)</label>
-            <input id="consumo">
+      <label>Valor (R$)</label>
+      <input type="number" step="0.01" id="valor">
 
-            <label>Valor Total (R$)</label>
-            <input id="valor">
-        </div>
-    </main>
+      <button onclick="cadastrarFatura()">Salvar fatura</button>
+    </div>
+
+    <div class="card">
+      <h3>Faturas cadastradas</h3>
+      <ul id="listaFaturas"></ul>
+    </div>
+  </main>
 
 </div>
 
-<script type="module" src="assets/js/pdf-import.js"></script>
-<script src="assets/js/app.js"></script>
+<script src="assets/js/supabase.js"></script>
+
+<script>
+async function carregarUnidades() {
+  const select = document.getElementById("unidadeSelect");
+  select.innerHTML = "";
+
+  const empresas = await listarEmpresas();
+  for (const e of empresas) {
+    const lojas = await listarLojas(e.id);
+    for (const l of lojas) {
+      const unidades = await listarUnidades(l.id);
+      unidades.forEach(u => {
+        const opt = document.createElement("option");
+        opt.value = u.id;
+        opt.textContent = `${e.nome} - ${l.nome} - UC ${u.uc}`;
+        select.appendChild(opt);
+      });
+    }
+  }
+
+  if (select.value) {
+    carregarFaturas(select.value);
+  }
+}
+
+async function carregarFaturas(unidade_id) {
+  const lista = document.getElementById("listaFaturas");
+  lista.innerHTML = "";
+
+  const faturas = await listarFaturas(unidade_id);
+  faturas.forEach(f => {
+    const li = document.createElement("li");
+    li.textContent =
+      `${f.mes_ano} | ${f.consumo_kwh} kWh | R$ ${f.valor}`;
+    lista.appendChild(li);
+  });
+}
+
+async function cadastrarFatura() {
+  const unidade_id = document.getElementById("unidadeSelect").value;
+
+  const dados = {
+    unidade_id,
+    mes_ano: document.getElementById("mesAno").value,
+    vencimento: document.getElementById("vencimento").value,
+    consumo_kwh: Number(document.getElementById("consumo").value),
+    valor: Number(document.getElementById("valor").value)
+  };
+
+  if (!dados.mes_ano || !dados.vencimento) {
+    alert("Preencha mês/ano e vencimento");
+    return;
+  }
+
+  await salvarFatura(dados);
+  carregarFaturas(unidade_id);
+}
+
+document.getElementById("unidadeSelect")
+  .addEventListener("change", e => {
+    carregarFaturas(e.target.value);
+  });
+
+carregarUnidades();
+</script>
+
 </body>
 </html>
