@@ -154,16 +154,36 @@ async function lerPDF(event) {
 
   extrairDadosEquatorial(texto);
 }
-
+  
 function extrairDadosEquatorial(texto) {
-  const mesAno = texto.match(/(\d{2}\/\d{4})/);
-  const venc = texto.match(/Vencimento\s*(\d{2}\/\d{2}\/\d{4})/i);
-  const consumo = texto.match(/Consumo\s*([\d.,]+)\s*kWh/i);
-  const valor = texto.match(/Valor\s*Total\s*R?\$?\s*([\d.,]+)/i);
+  texto = texto.replace(/\s+/g, " ").toUpperCase();
+
+  // MÊS / ANO (ex: 01/2026 ou 2026-01)
+  const mesAno =
+    texto.match(/(\d{2}\/\d{4})/) ||
+    texto.match(/(\d{4}-\d{2})/);
+
+  // VENCIMENTO
+  const venc =
+    texto.match(/VENCIMENTO\s*(\d{2}\/\d{2}\/\d{4})/) ||
+    texto.match(/VENC\.?\s*(\d{2}\/\d{2}\/\d{4})/);
+
+  // CONSUMO (kWh)
+  const consumo =
+    texto.match(/(\d+[.,]?\d*)\s*KWH/) ||
+    texto.match(/ENERGIA\s+ATIVA\s*(\d+[.,]?\d*)/);
+
+  // VALOR TOTAL
+  const valor =
+    texto.match(/TOTAL\s*A\s*PAGAR\s*R?\$?\s*([\d.,]+)/) ||
+    texto.match(/VALOR\s*TOTAL\s*R?\$?\s*([\d.,]+)/) ||
+    texto.match(/R\$\s*([\d.,]+)/);
 
   if (mesAno) {
-    document.getElementById("mesAno").value =
-      mesAno[1].split("/").reverse().join("-");
+    const v = mesAno[1].includes("/")
+      ? mesAno[1].split("/").reverse().join("-")
+      : mesAno[1];
+    document.getElementById("mesAno").value = v;
   }
 
   if (venc) {
@@ -181,7 +201,9 @@ function extrairDadosEquatorial(texto) {
       valor[1].replace(".", "").replace(",", ".");
   }
 }
+
 </script>
 
 </body>
 </html>
+
