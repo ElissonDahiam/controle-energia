@@ -1,6 +1,6 @@
 // 🔐 CONFIGURAÇÃO SUPABASE
-const SUPABASE_URL = "COLE_AQUI_SUA_PROJECT_URL";
-const SUPABASE_ANON_KEY = "COLE_AQUI_SUA_ANON_KEY";
+const SUPABASE_URL = "https://ilaythkvkcasxguzjchs.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlsYXl0aGt2a2Nhc3hndXpqY2hzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA0NjI3NzUsImV4cCI6MjA4NjAzODc3NX0.i-G9qqdOY0DLYv6I4CzEDqhGpv5UjI6JB9WBmLiQyYg";
 
 // Headers padrão
 const headers = {
