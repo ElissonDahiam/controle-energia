@@ -25,9 +25,15 @@
   <main>
     <h2>Faturas</h2>
 
+    <!-- CADASTRO / IMPORTAÇÃO -->
     <div class="card">
       <label>Unidade Consumidora</label>
       <select id="unidadeSelect"></select>
+
+      <label>Importar fatura (PDF)</label>
+      <input type="file" id="pdfInput" accept="application/pdf">
+
+      <hr>
 
       <label>Mês/Ano</label>
       <input id="mesAno" placeholder="2026-02">
@@ -44,6 +50,7 @@
       <button onclick="cadastrarFatura()">Salvar fatura</button>
     </div>
 
+    <!-- LISTAGEM -->
     <div class="card">
       <h3>Faturas cadastradas</h3>
       <ul id="listaFaturas"></ul>
@@ -52,8 +59,10 @@
 
 </div>
 
-<script src="assets/js/supabase.js"></script>
+<!-- SUPABASE -->
+<script src="assets/js/supabase.js?v=6"></script>
 
+<!-- SCRIPT PRINCIPAL -->
 <script>
 async function carregarUnidades() {
   const select = document.getElementById("unidadeSelect");
@@ -117,6 +126,61 @@ document.getElementById("unidadeSelect")
   });
 
 carregarUnidades();
+</script>
+
+<!-- PDF.JS (IMPORTAÇÃO AUTOMÁTICA) -->
+<script type="module">
+import * as pdfjsLib from "./assets/libs/pdf.mjs";
+
+pdfjsLib.GlobalWorkerOptions.workerSrc =
+  "./assets/libs/pdf.worker.mjs";
+
+document.getElementById("pdfInput")
+  .addEventListener("change", lerPDF);
+
+async function lerPDF(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const buffer = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
+
+  let texto = "";
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    texto += content.items.map(i => i.str).join(" ") + " ";
+  }
+
+  extrairDadosEquatorial(texto);
+}
+
+function extrairDadosEquatorial(texto) {
+  const mesAno = texto.match(/(\d{2}\/\d{4})/);
+  const venc = texto.match(/Vencimento\s*(\d{2}\/\d{2}\/\d{4})/i);
+  const consumo = texto.match(/Consumo\s*([\d.,]+)\s*kWh/i);
+  const valor = texto.match(/Valor\s*Total\s*R?\$?\s*([\d.,]+)/i);
+
+  if (mesAno) {
+    document.getElementById("mesAno").value =
+      mesAno[1].split("/").reverse().join("-");
+  }
+
+  if (venc) {
+    document.getElementById("vencimento").value =
+      venc[1].split("/").reverse().join("-");
+  }
+
+  if (consumo) {
+    document.getElementById("consumo").value =
+      consumo[1].replace(".", "").replace(",", ".");
+  }
+
+  if (valor) {
+    document.getElementById("valor").value =
+      valor[1].replace(".", "").replace(",", ".");
+  }
+}
 </script>
 
 </body>
