@@ -29,23 +29,83 @@
       <label>Loja</label>
       <select id="lojaUC"></select>
 
-      <label>Unidade Consumidora (UC)</label>
+      <label>Número da UC</label>
       <input id="numeroUC" placeholder="Ex: 10026875126">
 
       <label>Distribuidora</label>
-      <input id="distribuidora" value="Equatorial">
+      <input id="distribuidora" placeholder="Ex: Equatorial">
 
-      <button>Salvar unidade</button>
+      <button onclick="cadastrarUnidade()">Salvar unidade</button>
     </div>
 
     <div class="card">
       <h3>Unidades cadastradas</h3>
-      <ul id="listaUC"></ul>
+      <ul id="listaUnidades"></ul>
     </div>
   </main>
 
 </div>
 
-<script src="assets/js/app.js"></script>
+<!-- SUPABASE -->
+<script src="assets/js/supabase.js"></script>
+
+<!-- SCRIPT DA PÁGINA -->
+<script>
+async function carregarLojas() {
+  const select = document.getElementById("lojaUC");
+  select.innerHTML = "";
+
+  const empresas = await listarEmpresas();
+  for (const e of empresas) {
+    const lojas = await listarLojas(e.id);
+    lojas.forEach(l => {
+      const opt = document.createElement("option");
+      opt.value = l.id;
+      opt.textContent = `${e.nome} - ${l.nome}`;
+      select.appendChild(opt);
+    });
+  }
+
+  if (select.value) {
+    carregarUnidades(select.value);
+  }
+}
+
+async function carregarUnidades(loja_id) {
+  const lista = document.getElementById("listaUnidades");
+  lista.innerHTML = "";
+
+  const unidades = await listarUnidades(loja_id);
+  unidades.forEach(u => {
+    const li = document.createElement("li");
+    li.textContent = `${u.uc} (${u.distribuidora || "sem distribuidora"})`;
+    lista.appendChild(li);
+  });
+}
+
+async function cadastrarUnidade() {
+  const loja_id = document.getElementById("lojaUC").value;
+  const uc = document.getElementById("numeroUC").value.trim();
+  const distribuidora = document.getElementById("distribuidora").value.trim();
+
+  if (!uc) {
+    alert("Informe o número da UC");
+    return;
+  }
+
+  await salvarUnidade(loja_id, uc, distribuidora);
+  document.getElementById("numeroUC").value = "";
+  document.getElementById("distribuidora").value = "";
+  carregarUnidades(loja_id);
+}
+
+document.getElementById("lojaUC")
+  .addEventListener("change", e => {
+    carregarUnidades(e.target.value);
+  });
+
+carregarLojas();
+</script>
+
 </body>
 </html>
