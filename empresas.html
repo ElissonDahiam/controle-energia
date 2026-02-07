@@ -32,7 +32,7 @@
       <label>CNPJ</label>
       <input id="empresaCnpj" placeholder="00.000.000/0001-00">
 
-      <button>Salvar empresa</button>
+      <button onclick="cadastrarEmpresa()">Salvar empresa</button>
     </div>
 
     <div class="card">
@@ -43,6 +43,52 @@
 
 </div>
 
-<script src="assets/js/app.js"></script>
+<!-- 1️⃣ SUPABASE -->
+<script src="assets/js/supabase.js"></script>
+
+<!-- 2️⃣ SCRIPT DA PÁGINA -->
+<script>
+async function carregarEmpresas() {
+  const lista = document.getElementById("listaEmpresas");
+  lista.innerHTML = "";
+
+  try {
+    const empresas = await listarEmpresas();
+    empresas.forEach(e => {
+      const li = document.createElement("li");
+      li.textContent = `${e.nome} (${e.cnpj || "sem CNPJ"})`;
+      lista.appendChild(li);
+    });
+  } catch (err) {
+    console.error("Erro ao carregar empresas:", err);
+  }
+}
+
+async function cadastrarEmpresa() {
+  const nome = document.getElementById("empresaNome").value.trim();
+  const cnpj = document.getElementById("empresaCnpj").value.trim();
+
+  if (!nome) {
+    alert("Informe o nome da empresa");
+    return;
+  }
+
+  console.log("Enviando empresa:", nome, cnpj);
+
+  try {
+    await salvarEmpresa(nome, cnpj);
+    document.getElementById("empresaNome").value = "";
+    document.getElementById("empresaCnpj").value = "";
+    carregarEmpresas();
+    alert("Empresa salva com sucesso");
+  } catch (err) {
+    console.error("Erro ao salvar empresa:", err);
+    alert("Erro ao salvar empresa");
+  }
+}
+
+carregarEmpresas();
+</script>
+
 </body>
 </html>
