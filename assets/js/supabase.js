@@ -81,3 +81,26 @@ async function listarUnidades(loja_id) {
 
   return res.ok ? await res.json() : [];
 }
+
+// ================== FATURAS ==================
+async function salvarFatura(dados) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/faturas`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(dados)
+  });
+
+  if (!res.ok) {
+    console.error("Erro ao salvar fatura:", await res.text());
+    alert("Erro ao salvar fatura");
+  }
+}
+
+async function listarFaturas(unidade_id) {
+  const res = await fetch(
+    `${SUPABASE_URL}/rest/v1/faturas?unidade_id=eq.${unidade_id}&order=mes_ano.desc`,
+    { headers }
+  );
+
+  return res.ok ? await res.json() : [];
+}
