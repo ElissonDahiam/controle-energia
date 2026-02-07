@@ -1,11 +1,11 @@
-// 🔐 CONFIGURAÇÃO SUPABASE
+// 🔐 CONFIGURAÇÃO SUPABASE (CHAVES NOVAS)
 const SUPABASE_URL = "https://ilaythkvkcasxguzjchs.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlsYXl0aGt2a2Nhc3hndXpqY2hzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA0NjI3NzUsImV4cCI6MjA4NjAzODc3NX0.i-G9qqdOY0DLYv6I4CzEDqhGpv5UjI6JB9WBmLiQyYg";
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_T2yTuL22U4ppJSAU5UMd_A_y6szgC08";
 
-// Headers padrão
+// Headers padrão (SUPABASE NOVO)
 const headers = {
-  "apikey": SUPABASE_ANON_KEY,
-  "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
+  "apikey": SUPABASE_PUBLISHABLE_KEY,
+  "Authorization": `Bearer ${SUPABASE_PUBLISHABLE_KEY}`,
   "Content-Type": "application/json"
 };
 
@@ -18,15 +18,23 @@ async function salvarEmpresa(nome, cnpj) {
   });
 
   if (!res.ok) {
+    const erro = await res.text();
+    console.error("Erro Supabase:", erro);
     alert("Erro ao salvar empresa");
-    console.error(await res.text());
   }
 }
 
 async function listarEmpresas() {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/empresas?select=*`, {
-    headers
-  });
+  const res = await fetch(
+    `${SUPABASE_URL}/rest/v1/empresas?select=*`,
+    { headers }
+  );
+
+  if (!res.ok) {
+    console.error("Erro ao listar empresas:", await res.text());
+    return [];
+  }
+
   return await res.json();
 }
 
@@ -39,8 +47,7 @@ async function salvarLoja(nome, empresa_id) {
   });
 
   if (!res.ok) {
-    alert("Erro ao salvar loja");
-    console.error(await res.text());
+    console.error("Erro ao salvar loja:", await res.text());
   }
 }
 
@@ -49,7 +56,8 @@ async function listarLojas(empresa_id) {
     `${SUPABASE_URL}/rest/v1/lojas?empresa_id=eq.${empresa_id}`,
     { headers }
   );
-  return await res.json();
+
+  return res.ok ? await res.json() : [];
 }
 
 // ================== UNIDADES ==================
@@ -61,8 +69,7 @@ async function salvarUnidade(loja_id, uc, distribuidora) {
   });
 
   if (!res.ok) {
-    alert("Erro ao salvar unidade");
-    console.error(await res.text());
+    console.error("Erro ao salvar unidade:", await res.text());
   }
 }
 
@@ -71,5 +78,6 @@ async function listarUnidades(loja_id) {
     `${SUPABASE_URL}/rest/v1/unidades_consumidoras?loja_id=eq.${loja_id}`,
     { headers }
   );
-  return await res.json();
+
+  return res.ok ? await res.json() : [];
 }
