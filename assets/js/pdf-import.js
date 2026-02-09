@@ -1,49 +1,64 @@
-import * as pdfjsLib from "../libs/pdf.mjs";
+// ================== PDF IMPORT — EQUATORIAL ==================
 
-pdfjsLib.GlobalWorkerOptions.workerSrc =
-    "../libs/pdf.worker.mjs";
+async function importarFaturaEquatorial(file) {
+  const arrayBuffer = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
 
-const input = document.getElementById("pdfInput");
+  let textoCompleto = "";
 
-if (input) {
-    input.addEventListener("change", async function () {
-        const file = this.files[0];
-        if (!file) return;
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    const strings = content.items.map(item => item.str);
+    textoCompleto += strings.join(" ") + "\n";
+  }
 
-        const arrayBuffer = await file.arrayBuffer();
-        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  // ================== EXTRAÇÕES ==================
 
-        let text = "";
+  // 📅 Conta mês (ex: DEZ/2025)
+  const contaMesMatch = textoCompleto.match(/Conta mês\s+([A-Z]{3}\/\d{4})/i);
 
-        for (let i = 1; i <= pdf.numPages; i++) {
-            const page = await pdf.getPage(i);
-            const content = await page.getTextContent();
-            content.items.forEach(item => {
-                text += item.str + " ";
-            });
-        }
+  let mesAnoFormatado = "";
+  if (contaMesMatch) {
+    const [mesTxt, ano] = contaMesMatch[1].split("/");
+    const meses = {
+      JAN: "01", FEV: "02", MAR: "03", ABR: "04",
+      MAI: "05", JUN: "06", JUL: "07", AGO: "08",
+      SET: "09", OUT: "10", NOV: "11", DEZ: "12"
+    };
+    mesAnoFormatado = `${meses[mesTxt.toUpperCase()]}/${ano}`;
+  }
 
-        extractData(text);
-    });
-}
+  // 📆 Vencimento
+  const vencimentoMatch = textoCompleto.match(/Vencimento\s+(\d{2}\/\d{2}\/\d{4})/i);
+  let vencimentoISO = "";
+  if (vencimentoMatch) {
+    const [d, m, a] = vencimentoMatch[1].split("/");
+    vencimentoISO = `${a}-${m}-${d}`;
+  }
 
-function extractData(text) {
+  // ⚡ Energia Ativa
+  const ativaMatch = textoCompleto.match(/ENERGIA ATIVA.*?(\d+)\s*kWh/i);
+  const energiaAtiva = ativaMatch ? Number(ativaMatch[1]) : 0;
 
-    const uc = text.match(/\b\d{11}\b/);
-    if (uc) document.getElementById("uc").value = uc[0];
+  // ☀️ Energia Geração (solar)
+  const geracaoMatch = textoCompleto.match(/ENERGIA GERAÇÃO.*?(\d+)\s*kWh/i);
+  const energiaGeracao = geracaoMatch ? Number(geracaoMatch[1]) : 0;
 
-    const mesAno = text.match(/(JAN|FEV|MAR|ABR|MAI|JUN|JUL|AGO|SET|OUT|NOV|DEZ)\/\d{4}/);
-    if (mesAno) document.getElementById("mesAno").value = mesAno[0];
+  // 💰 Total a pagar
+  const totalMatch = textoCompleto.match(/Total a pagar.*?R\$[\s]*([\d.,]+)/i);
+  let valorTotal = "";
+  if (totalMatch) {
+    valorTotal = Number(
+      totalMatch[1].replace(".", "").replace(",", ".")
+    );
+  }
 
-    const venc = text.match(/\b\d{2}\/\d{2}\/\d{4}\b/);
-    if (venc) document.getElementById("vencimento").value = venc[0];
-
-    const valor = text.match(/R\$\s*\**([\d,.]+)/);
-    if (valor) {
-        document.getElementById("valor").value =
-            valor[1].replace(".", "").replace(",", ".");
-    }
-
-    const consumo = text.match(/ENERGIA ATIVA[^0-9]*([0-9]+)/i);
-    if (consumo) document.getElementById("consumo").value = consumo[1];
+  return {
+    mes_ano: mesAnoFormatado,
+    vencimento: vencimentoISO,
+    consumo_kwh: energiaAtiva,
+    energia_geracao_kwh: energiaGeracao,
+    valor: valorTotal
+  };
 }
