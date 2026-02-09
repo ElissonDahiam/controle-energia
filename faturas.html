@@ -25,7 +25,6 @@
   <main>
     <h2>Faturas</h2>
 
-    <!-- CADASTRO / IMPORTAÇÃO -->
     <div class="card">
       <label>Unidade Consumidora</label>
       <select id="unidadeSelect"></select>
@@ -36,7 +35,7 @@
       <hr>
 
       <label>Mês/Ano</label>
-      <input id="mesAno" placeholder="2026-02">
+      <input id="mesAno" placeholder="12/2025">
 
       <label>Vencimento</label>
       <input type="date" id="vencimento">
@@ -50,7 +49,6 @@
       <button onclick="cadastrarFatura()">Salvar fatura</button>
     </div>
 
-    <!-- LISTAGEM -->
     <div class="card">
       <h3>Faturas cadastradas</h3>
       <ul id="listaFaturas"></ul>
@@ -60,9 +58,12 @@
 </div>
 
 <!-- SUPABASE -->
-<script src="assets/js/supabase.js?v=6"></script>
+<script src="assets/js/supabase.js?v=7"></script>
 
-<!-- SCRIPT PRINCIPAL -->
+<!-- PDF IMPORT (ISOLADO) -->
+<script type="module" src="assets/js/pdf-import.js"></script>
+
+<!-- SCRIPT DA PÁGINA -->
 <script>
 async function carregarUnidades() {
   const select = document.getElementById("unidadeSelect");
@@ -82,9 +83,7 @@ async function carregarUnidades() {
     }
   }
 
-  if (select.value) {
-    carregarFaturas(select.value);
-  }
+  if (select.value) carregarFaturas(select.value);
 }
 
 async function carregarFaturas(unidade_id) {
@@ -94,8 +93,7 @@ async function carregarFaturas(unidade_id) {
   const faturas = await listarFaturas(unidade_id);
   faturas.forEach(f => {
     const li = document.createElement("li");
-    li.textContent =
-      `${f.mes_ano} | ${f.consumo_kwh} kWh | R$ ${f.valor}`;
+    li.textContent = `${f.mes_ano} | ${f.consumo_kwh} kWh | R$ ${f.valor}`;
     lista.appendChild(li);
   });
 }
@@ -105,10 +103,10 @@ async function cadastrarFatura() {
 
   const dados = {
     unidade_id,
-    mes_ano: document.getElementById("mesAno").value,
-    vencimento: document.getElementById("vencimento").value,
-    consumo_kwh: Number(document.getElementById("consumo").value),
-    valor: Number(document.getElementById("valor").value)
+    mes_ano: mesAno.value,
+    vencimento: vencimento.value,
+    consumo_kwh: Number(consumo.value),
+    valor: Number(valor.value)
   };
 
   if (!dados.mes_ano || !dados.vencimento) {
@@ -120,99 +118,12 @@ async function cadastrarFatura() {
   carregarFaturas(unidade_id);
 }
 
-document.getElementById("unidadeSelect")
-  .addEventListener("change", e => {
-    carregarFaturas(e.target.value);
-  });
+unidadeSelect.addEventListener("change", e => {
+  carregarFaturas(e.target.value);
+});
 
 carregarUnidades();
 </script>
 
-<!-- PDF.JS (IMPORTAÇÃO AUTOMÁTICA) -->
-<script type="module">
-import * as pdfjsLib from "./assets/libs/pdf.mjs";
-
-pdfjsLib.GlobalWorkerOptions.workerSrc =
-  "./assets/libs/pdf.worker.mjs";
-
-document.getElementById("pdfInput")
-  .addEventListener("change", lerPDF);
-
-async function lerPDF(event) {
-  const file = event.target.files[0];
-  if (!file) return;
-
-  const buffer = await file.arrayBuffer();
-  const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
-
-  let texto = "";
-  for (let i = 1; i <= pdf.numPages; i++) {
-    const page = await pdf.getPage(i);
-    const content = await page.getTextContent();
-    texto += content.items.map(i => i.str).join(" ") + " ";
-  }
-
-  extrairDadosEquatorial(texto);
-}
-  
-function extrairDadosEquatorial(texto) {
-  texto = texto.replace(/\s+/g, " ").toUpperCase();
-
-  // ================== MÊS / ANO ==================
-  // Ex: CONTA MÊS DEZ/2025
-  const mesMatch = texto.match(/CONTA MÊS\s+([A-Z]{3})\/(\d{4})/);
-
-  if (mesMatch) {
-    const meses = {
-      JAN: "01", FEV: "02", MAR: "03", ABR: "04",
-      MAI: "05", JUN: "06", JUL: "07", AGO: "08",
-      SET: "09", OUT: "10", NOV: "11", DEZ: "12"
-    };
-
-    const mesNum = meses[mesMatch[1]];
-    const ano = mesMatch[2];
-
-    // formato 12/2025 (como você pediu)
-    document.getElementById("mesAno").value = `${mesNum}/${ano}`;
-  }
-
-  // ================== VENCIMENTO ==================
-  const vencMatch = texto.match(/VENCIMENTO\s+(\d{2}\/\d{2}\/\d{4})/);
-  if (vencMatch) {
-    const [d, m, a] = vencMatch[1].split("/");
-    document.getElementById("vencimento").value = `${a}-${m}-${d}`;
-  }
-
-  // ================== CONSUMO ==================
-  // Energia Ativa
-  const ativaMatch = texto.match(/ENERGIA ATIVA.*?(\d+)\s*KWH/);
-  const energiaAtiva = ativaMatch ? Number(ativaMatch[1]) : 0;
-
-  // Energia Geração (solar)
-  const geracaoMatch = texto.match(/ENERGIA GERAÇÃO.*?(\d+)\s*KWH/);
-  const energiaGeracao = geracaoMatch ? Number(geracaoMatch[1]) : 0;
-
-  // 👉 consumo exibido = ENERGIA ATIVA (padrão correto)
-  if (energiaAtiva) {
-    document.getElementById("consumo").value = energiaAtiva;
-  }
-
-  // (log técnico — depois podemos salvar no banco)
-  if (energiaGeracao) {
-    console.log("Energia solar (kWh):", energiaGeracao);
-  }
-
-  // ================== VALOR TOTAL ==================
-  const totalMatch = texto.match(/TOTAL A PAGAR\s*R?\$?\s*([\d.,]+)/);
-  if (totalMatch) {
-    document.getElementById("valor").value =
-      totalMatch[1].replace(".", "").replace(",", ".");
-  }
-}
-
-</script>
-
 </body>
 </html>
-
-
