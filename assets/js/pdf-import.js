@@ -1,28 +1,27 @@
-// ================== PDF IMPORT — EQUATORIAL (ESTÁVEL REAL) ==================
+// ================== PDF IMPORT — EQUATORIAL (ROBUSTO REAL) ==================
 
 async function importarFaturaEquatorial(file) {
   const buffer = await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
 
-  let tokens = [];
+  let linhas = [];
 
   for (let p = 1; p <= pdf.numPages; p++) {
     const page = await pdf.getPage(p);
     const content = await page.getTextContent();
     content.items.forEach(i => {
-      if (i.str && i.str.trim()) {
-        tokens.push(i.str.trim().toUpperCase());
-      }
+      const t = i.str?.trim();
+      if (t) linhas.push(t.toUpperCase());
     });
   }
 
-  // ================== MÊS / ANO ==================
+  /* ================== MÊS / ANO ================== */
   let mes_ano = "";
-  const mesToken = tokens.find(t =>
-    /(JAN|FEV|MAR|ABR|MAI|JUN|JUL|AGO|SET|OUT|NOV|DEZ)\/\d{4}/.test(t)
+  const mesLinha = linhas.find(l =>
+    /(JAN|FEV|MAR|ABR|MAI|JUN|JUL|AGO|SET|OUT|NOV|DEZ)\/\d{4}/.test(l)
   );
-  if (mesToken) {
-    const m = mesToken.match(/(JAN|FEV|MAR|ABR|MAI|JUN|JUL|AGO|SET|OUT|NOV|DEZ)\/(\d{4})/);
+  if (mesLinha) {
+    const m = mesLinha.match(/(JAN|FEV|MAR|ABR|MAI|JUN|JUL|AGO|SET|OUT|NOV|DEZ)\/(\d{4})/);
     const map = {
       JAN:"01",FEV:"02",MAR:"03",ABR:"04",
       MAI:"05",JUN:"06",JUL:"07",AGO:"08",
@@ -31,52 +30,52 @@ async function importarFaturaEquatorial(file) {
     mes_ano = `${map[m[1]]}/${m[2]}`;
   }
 
-  // ================== VENCIMENTO ==================
+  /* ================== VENCIMENTO ================== */
   let vencimento = "";
-  const vencIdx = tokens.findIndex(t => t === "VENCIMENTO");
-  if (vencIdx !== -1) {
-    const d = tokens.slice(vencIdx, vencIdx + 6)
-      .find(t => /^\d{2}\/\d{2}\/\d{4}$/.test(t));
-    if (d) {
-      const [dia, mes, ano] = d.split("/");
-      vencimento = `${ano}-${mes}-${dia}`;
+  for (let i = 0; i < linhas.length; i++) {
+    if (linhas[i] === "VENCIMENTO" && linhas[i + 1]?.match(/\d{2}\/\d{2}\/\d{4}/)) {
+      const [d, m, a] = linhas[i + 1].split("/");
+      vencimento = `${a}-${m}-${d}`;
+      break;
     }
   }
 
-  // ================== CONSUMOS ==================
+  /* ================== CONSUMOS ================== */
   let consumoAtivo = 0;
   let energiaGeracao = 0;
 
-  for (let i = 0; i < tokens.length; i++) {
+  for (let i = 0; i < linhas.length; i++) {
 
-    // ENERGIA ATIVA → pegar PRIMEIRO número pequeno depois
-    if (tokens[i] === "ENERGIA" && tokens[i + 1] === "ATIVA") {
-      for (let j = i; j < i + 20; j++) {
-        if (/^\d+$/.test(tokens[j]) && Number(tokens[j]) < 1000) {
-          consumoAtivo = Number(tokens[j]);
-          break;
-        }
+    // ENERGIA ATIVA → último número da linha
+    if (linhas[i].includes("ENERGIA ATIVA") && linhas[i].includes("KWH")) {
+      const nums = linhas[i].match(/\d+/g);
+      if (nums?.length) {
+        consumoAtivo = Number(nums[nums.length - 1]);
       }
     }
 
-    // ENERGIA GERAÇÃO
-    if (tokens[i] === "ENERGIA" && tokens[i + 1] === "GERAÇÃO") {
-      for (let j = i; j < i + 20; j++) {
-        if (/^\d+$/.test(tokens[j]) && Number(tokens[j]) > 1000) {
-          energiaGeracao = Number(tokens[j]);
-          break;
-        }
+    // ENERGIA GERAÇÃO → último número da linha
+    if (linhas[i].includes("ENERGIA GERAÇÃO") && linhas[i].includes("KWH")) {
+      const nums = linhas[i].match(/\d+/g);
+      if (nums?.length) {
+        energiaGeracao = Number(nums[nums.length - 1]);
       }
     }
   }
 
   const consumoTotal = consumoAtivo + energiaGeracao;
 
-  // ================== VALOR ==================
+  /* ================== VALOR TOTAL ================== */
   let valor = null;
-  const valorToken = tokens.find(t => /^\d{1,3}(\.\d{3})*,\d{2}$/.test(t));
-  if (valorToken) {
-    valor = Number(valorToken.replace(/\./g, "").replace(",", "."));
+  for (let i = 0; i < linhas.length; i++) {
+    if (linhas[i].includes("TOTAL A PAGAR")) {
+      const prox = linhas.slice(i, i + 3).join(" ");
+      const m = prox.match(/(\d{1,3}(\.\d{3})*,\d{2})/);
+      if (m) {
+        valor = Number(m[1].replace(/\./g, "").replace(",", "."));
+        break;
+      }
+    }
   }
 
   return {
