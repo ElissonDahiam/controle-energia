@@ -1,4 +1,4 @@
-// ================== PDF IMPORT — EQUATORIAL (DEFINITIVO) ==================
+// ================== PDF IMPORT — EQUATORIAL (FINAL REAL) ==================
 
 async function importarFaturaEquatorial(file) {
   const buffer = await file.arrayBuffer();
@@ -15,7 +15,7 @@ async function importarFaturaEquatorial(file) {
   texto = texto.replace(/\s+/g, " ").toUpperCase();
 
   // ================== MÊS / ANO ==================
-  // Ex: DEZ/2025 (campo "Conta mês")
+  // "CONTA MÊS DEZ/2025"
   let mes_ano = "";
   const mesMatch = texto.match(/CONTA MÊS\s*(JAN|FEV|MAR|ABR|MAI|JUN|JUL|AGO|SET|OUT|NOV|DEZ)\/(\d{4})/);
 
@@ -28,26 +28,27 @@ async function importarFaturaEquatorial(file) {
     mes_ano = `${meses[mesMatch[1]]}/${mesMatch[2]}`;
   }
 
-  // ================== VENCIMENTO (CORRETO) ==================
-  // Busca EXPLICITAMENTE o rótulo VENCIMENTO
+  // ================== VENCIMENTO (CORRIGIDO DE VEZ) ==================
   let vencimento = "";
-  const vencMatch = texto.match(/VENCIMENTO\s*(\d{2}\/\d{2}\/\d{4})/);
+  const vencMatch = texto.match(/VENCIMENTO[^0-9]*(\d{2}\/\d{2}\/\d{4})/);
 
   if (vencMatch) {
     const [d, m, a] = vencMatch[1].split("/");
     vencimento = `${a}-${m}-${d}`;
   }
 
-  // ================== CONSUMO — ENERGIA ATIVA ==================
+  // ================== CONSUMO (ENERGIA ATIVA) ==================
   let consumo_kwh = 0;
-  const ativaMatch = texto.match(/ENERGIA ATIVA[^0-9]*(\d+)\s*KWH/);
+  const ativaMatch = texto.match(/ENERGIA ATIVA[\s\S]{0,80}?(\d{2,5})\s*(?=ENERGIA|TOTAL|R\$)/);
+
   if (ativaMatch) {
     consumo_kwh = Number(ativaMatch[1]);
   }
 
   // ================== ENERGIA GERAÇÃO (SOLAR) ==================
   let energia_geracao_kwh = 0;
-  const geracaoMatch = texto.match(/ENERGIA GERAÇÃO[^0-9]*(\d+)\s*KWH/);
+  const geracaoMatch = texto.match(/ENERGIA GERAÇÃO[\s\S]{0,80}?(\d{2,6})\s*(?=ENERGIA|TOTAL|R\$)/);
+
   if (geracaoMatch) {
     energia_geracao_kwh = Number(geracaoMatch[1]);
   }
@@ -55,6 +56,7 @@ async function importarFaturaEquatorial(file) {
   // ================== TOTAL A PAGAR ==================
   let valor = null;
   const totalMatch = texto.match(/TOTAL A PAGAR[^0-9]*([\d.,]+)/);
+
   if (totalMatch) {
     valor = Number(
       totalMatch[1]
