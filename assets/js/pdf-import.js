@@ -1,8 +1,8 @@
-// ================== PDF IMPORT — EQUATORIAL (DEFINITIVO E CORRETO) ==================
+// ================== PDF IMPORT — EQUATORIAL (FINAL ESTÁVEL) ==================
 
 async function importarFaturaEquatorial(file) {
-  const arrayBuffer = await file.arrayBuffer();
-  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  const buffer = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
 
   let linhas = [];
 
@@ -10,86 +10,73 @@ async function importarFaturaEquatorial(file) {
     const page = await pdf.getPage(i);
     const content = await page.getTextContent();
     content.items.forEach(item => {
-      if (item.str && item.str.trim()) {
-        linhas.push(item.str.trim().toUpperCase());
-      }
+      const t = item.str?.trim();
+      if (t) linhas.push(t.toUpperCase());
     });
   }
 
   // ================== MÊS / ANO ==================
   let mes_ano = "";
   const mesLinha = linhas.find(l =>
-    l.match(/\b(JAN|FEV|MAR|ABR|MAI|JUN|JUL|AGO|SET|OUT|NOV|DEZ)\/\d{4}\b/)
+    /(JAN|FEV|MAR|ABR|MAI|JUN|JUL|AGO|SET|OUT|NOV|DEZ)\/\d{4}/.test(l)
   );
 
   if (mesLinha) {
-    const match = mesLinha.match(
-      /(JAN|FEV|MAR|ABR|MAI|JUN|JUL|AGO|SET|OUT|NOV|DEZ)\/(\d{4})/
-    );
+    const m = mesLinha.match(/(JAN|FEV|MAR|ABR|MAI|JUN|JUL|AGO|SET|OUT|NOV|DEZ)\/(\d{4})/);
     const meses = {
-      JAN: "01", FEV: "02", MAR: "03", ABR: "04",
-      MAI: "05", JUN: "06", JUL: "07", AGO: "08",
-      SET: "09", OUT: "10", NOV: "11", DEZ: "12"
+      JAN:"01",FEV:"02",MAR:"03",ABR:"04",
+      MAI:"05",JUN:"06",JUL:"07",AGO:"08",
+      SET:"09",OUT:"10",NOV:"11",DEZ:"12"
     };
-    mes_ano = `${meses[match[1]]}/${match[2]}`;
+    mes_ano = `${meses[m[1]]}/${m[2]}`;
   }
 
-  // ================== VENCIMENTO REAL ==================
+  // ================== VENCIMENTO ==================
   let vencimento = "";
   const vencLinha = linhas.find(l => l.includes("VENCIMENTO"));
-
   if (vencLinha) {
-    const m = vencLinha.match(/(\d{2}\/\d{2}\/\d{4})/);
-    if (m) {
-      const [d, mth, a] = m[1].split("/");
-      vencimento = `${a}-${mth}-${d}`;
+    const d = vencLinha.match(/(\d{2}\/\d{2}\/\d{4})/);
+    if (d) {
+      const [dia, mes, ano] = d[1].split("/");
+      vencimento = `${ano}-${mes}-${dia}`;
     }
   }
 
   // ================== CONSUMOS ==================
-  let consumo_ativo_kwh = 0;
-  let energia_geracao_kwh = 0;
+  let consumoAtivo = 0;
+  let energiaGeracao = 0;
 
   for (let i = 0; i < linhas.length; i++) {
-    if (
-      linhas[i].includes("ENERGIA ATIVA") &&
-      linhas[i + 1] &&
-      linhas[i + 1].includes("KWH")
-    ) {
-      const m = linhas[i + 1].match(/(\d+)/);
-      if (m) consumo_ativo_kwh = Number(m[1]);
+
+    // ENERGIA ATIVA → pegar o CONSUMO, não leitura
+    if (linhas[i].includes("ENERGIA ATIVA") && linhas[i].includes("CONSUMO KWH")) {
+      const m = linhas[i].match(/CONSUMO KWH\s*(\d+)/);
+      if (m) consumoAtivo = Number(m[1]);
     }
 
-    if (
-      linhas[i].includes("ENERGIA GERAÇÃO") &&
-      linhas[i + 1] &&
-      linhas[i + 1].includes("KWH")
-    ) {
-      const m = linhas[i + 1].match(/(\d+)/);
-      if (m) energia_geracao_kwh = Number(m[1]);
+    // ENERGIA GERAÇÃO (SOLAR)
+    if (linhas[i].includes("ENERGIA GERAÇÃO") && linhas[i].includes("CONSUMO KWH")) {
+      const m = linhas[i].match(/CONSUMO KWH\s*(\d+)/);
+      if (m) energiaGeracao = Number(m[1]);
     }
   }
 
-  const consumo_total_kwh = consumo_ativo_kwh + energia_geracao_kwh;
+  const consumoTotal = consumoAtivo + energiaGeracao;
 
   // ================== VALOR TOTAL ==================
   let valor = null;
   const totalLinha = linhas.find(l => l.includes("TOTAL A PAGAR"));
-
   if (totalLinha) {
-    const m = totalLinha.match(/([\d.,]+)/);
-    if (m) {
-      valor = Number(m[1].replace(/\./g, "").replace(",", "."));
-    }
+    const v = totalLinha.match(/([\d.,]+)/);
+    if (v) valor = Number(v[1].replace(/\./g,"").replace(",","."));
   }
 
   return {
     mes_ano,
     vencimento,
-    consumo_ativo_kwh,
-    energia_geracao_kwh,
-    consumo_total_kwh,
-    consumo_kwh: consumo_total_kwh,
+    consumo_ativo_kwh: consumoAtivo,
+    energia_geracao_kwh: energiaGeracao,
+    consumo_total_kwh: consumoTotal,
     valor
   };
 }
