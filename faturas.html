@@ -35,13 +35,19 @@
       <hr>
 
       <label>Mês/Ano</label>
-      <input id="mesAno" placeholder="12/2025">
+      <input id="mesAno">
 
       <label>Vencimento</label>
       <input type="date" id="vencimento">
 
-      <label>Consumo (kWh)</label>
-      <input type="number" id="consumo">
+      <label>Consumo Ativo (kWh)</label>
+      <input type="number" id="consumoAtivo">
+
+      <label>Energia Geração (kWh)</label>
+      <input type="number" id="energiaGeracao">
+
+      <label>Consumo Total (kWh)</label>
+      <input type="number" id="consumoTotal">
 
       <label>Valor (R$)</label>
       <input type="number" step="0.01" id="valor">
@@ -57,20 +63,16 @@
 
 </div>
 
-<!-- SUPABASE -->
-<script src="assets/js/supabase.js?v=8"></script>
+<script src="assets/js/supabase.js"></script>
 
-<!-- PDF.JS (UMD ESTÁVEL) -->
 <script src="assets/libs/pdf.min.js"></script>
 <script>
   pdfjsLib.GlobalWorkerOptions.workerSrc =
     "assets/libs/pdf.worker.min.js";
 </script>
 
-<!-- PARSER EQUATORIAL -->
 <script src="assets/js/pdf-import.js"></script>
 
-<!-- SCRIPT DA PÁGINA -->
 <script>
 document.addEventListener("DOMContentLoaded", async () => {
 
@@ -78,15 +80,17 @@ document.addEventListener("DOMContentLoaded", async () => {
   const pdfInput = document.getElementById("pdfInput");
   const mesAno = document.getElementById("mesAno");
   const vencimento = document.getElementById("vencimento");
-  const consumo = document.getElementById("consumo");
+  const consumoAtivo = document.getElementById("consumoAtivo");
+  const energiaGeracao = document.getElementById("energiaGeracao");
+  const consumoTotal = document.getElementById("consumoTotal");
   const valor = document.getElementById("valor");
   const listaFaturas = document.getElementById("listaFaturas");
   const btnSalvar = document.getElementById("btnSalvar");
 
   async function carregarUnidades() {
     unidadeSelect.innerHTML = "";
-
     const empresas = await listarEmpresas();
+
     for (const e of empresas) {
       const lojas = await listarLojas(e.id);
       for (const l of lojas) {
@@ -99,73 +103,29 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
       }
     }
-
-    if (unidadeSelect.value) {
-      carregarFaturas(unidadeSelect.value);
-    }
   }
 
-  async function carregarFaturas(unidade_id) {
-    listaFaturas.innerHTML = "";
-    const faturas = await listarFaturas(unidade_id);
-
-    faturas.forEach(f => {
-      const li = document.createElement("li");
-      li.textContent = `${f.mes_ano} | ${f.consumo_kwh} kWh | R$ ${f.valor}`;
-      listaFaturas.appendChild(li);
-    });
-  }
-
-  async function cadastrarFatura() {
-    const dados = {
+  btnSalvar.addEventListener("click", async () => {
+    await salvarFatura({
       unidade_id: unidadeSelect.value,
       mes_ano: mesAno.value,
       vencimento: vencimento.value,
-      consumo_kwh: Number(consumo.value),
+      consumo_ativo_kwh: Number(consumoAtivo.value),
+      energia_geracao_kwh: Number(energiaGeracao.value),
+      consumo_total_kwh: Number(consumoTotal.value),
       valor: Number(valor.value)
-    };
-
-    if (!dados.mes_ano || !dados.vencimento) {
-      alert("Preencha mês/ano e vencimento");
-      return;
-    }
-
-    await salvarFatura(dados);
-    carregarFaturas(dados.unidade_id);
-  }
-
-  unidadeSelect.addEventListener("change", e => {
-    carregarFaturas(e.target.value);
+    });
   });
 
-  btnSalvar.addEventListener("click", cadastrarFatura);
-
   pdfInput.addEventListener("change", async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+    const dados = await importarFaturaEquatorial(e.target.files[0]);
 
-    try {
-      const dados = await importarFaturaEquatorial(file);
-
-      console.log("PDF importado:", dados);
-
-      mesAno.value = dados.mes_ano || "";
-      vencimento.value = dados.vencimento || "";
-      consumo.value = dados.consumo_kwh ?? "";
-      valor.value = dados.valor ?? "";
-
-      if (dados.energia_geracao_kwh > 0) {
-        console.info(
-          "Energia solar detectada:",
-          dados.energia_geracao_kwh,
-          "kWh"
-        );
-      }
-
-    } catch (err) {
-      console.error("Erro ao importar PDF:", err);
-      alert("Erro ao importar fatura PDF");
-    }
+    mesAno.value = dados.mes_ano;
+    vencimento.value = dados.vencimento;
+    consumoAtivo.value = dados.consumo_ativo_kwh;
+    energiaGeracao.value = dados.energia_geracao_kwh;
+    consumoTotal.value = dados.consumo_total_kwh;
+    valor.value = dados.valor;
   });
 
   carregarUnidades();
