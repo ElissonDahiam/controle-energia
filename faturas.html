@@ -25,6 +25,7 @@
   <main>
     <h2>Faturas</h2>
 
+    <!-- CADASTRO / IMPORTAÇÃO -->
     <div class="card">
       <label>Unidade Consumidora</label>
       <select id="unidadeSelect"></select>
@@ -49,6 +50,7 @@
       <button onclick="cadastrarFatura()">Salvar fatura</button>
     </div>
 
+    <!-- LISTAGEM -->
     <div class="card">
       <h3>Faturas cadastradas</h3>
       <ul id="listaFaturas"></ul>
@@ -57,15 +59,22 @@
 
 </div>
 
+<!-- ================= SUPABASE ================= -->
 <script src="assets/js/supabase.js?v=7"></script>
+
+<!-- ================= PDF.JS (UMD ESTÁVEL) ================= -->
 <script src="assets/libs/pdf.min.js"></script>
+
+<!-- ================= PARSER EQUATORIAL ================= -->
 <script src="assets/js/pdf-import.js"></script>
 
+<!-- ================= SCRIPT DA PÁGINA ================= -->
 <script>
 async function carregarUnidades() {
-  unidadeSelect.innerHTML = "";
-  const empresas = await listarEmpresas();
+  const select = document.getElementById("unidadeSelect");
+  select.innerHTML = "";
 
+  const empresas = await listarEmpresas();
   for (const e of empresas) {
     const lojas = await listarLojas(e.id);
     for (const l of lojas) {
@@ -74,28 +83,31 @@ async function carregarUnidades() {
         const opt = document.createElement("option");
         opt.value = u.id;
         opt.textContent = `${e.nome} - ${l.nome} - UC ${u.uc}`;
-        unidadeSelect.appendChild(opt);
+        select.appendChild(opt);
       });
     }
   }
 
-  if (unidadeSelect.value) carregarFaturas(unidadeSelect.value);
+  if (select.value) carregarFaturas(select.value);
 }
 
 async function carregarFaturas(unidade_id) {
-  listaFaturas.innerHTML = "";
-  const faturas = await listarFaturas(unidade_id);
+  const lista = document.getElementById("listaFaturas");
+  lista.innerHTML = "";
 
+  const faturas = await listarFaturas(unidade_id);
   faturas.forEach(f => {
     const li = document.createElement("li");
     li.textContent = `${f.mes_ano} | ${f.consumo_kwh} kWh | R$ ${f.valor}`;
-    listaFaturas.appendChild(li);
+    lista.appendChild(li);
   });
 }
 
 async function cadastrarFatura() {
+  const unidade_id = unidadeSelect.value;
+
   const dados = {
-    unidade_id: unidadeSelect.value,
+    unidade_id,
     mes_ano: mesAno.value,
     vencimento: vencimento.value,
     consumo_kwh: Number(consumo.value),
@@ -108,7 +120,7 @@ async function cadastrarFatura() {
   }
 
   await salvarFatura(dados);
-  carregarFaturas(dados.unidade_id);
+  carregarFaturas(unidade_id);
 }
 
 unidadeSelect.addEventListener("change", e => {
@@ -116,6 +128,37 @@ unidadeSelect.addEventListener("change", e => {
 });
 
 carregarUnidades();
+</script>
+
+<!-- ================= IMPORTAÇÃO PDF ================= -->
+<script>
+document.getElementById("pdfInput").addEventListener("change", async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  try {
+    const dados = await importarFaturaEquatorial(file);
+
+    console.log("PDF importado com sucesso:", dados);
+
+    if (dados.mes_ano) mesAno.value = dados.mes_ano;
+    if (dados.vencimento) vencimento.value = dados.vencimento;
+    if (dados.consumo_kwh !== null) consumo.value = dados.consumo_kwh;
+    if (dados.valor !== null) valor.value = dados.valor;
+
+    if (dados.energia_geracao_kwh > 0) {
+      console.info(
+        "Energia geração (solar) detectada:",
+        dados.energia_geracao_kwh,
+        "kWh"
+      );
+    }
+
+  } catch (err) {
+    console.error("Erro ao importar PDF:", err);
+    alert("Erro ao ler a fatura PDF");
+  }
+});
 </script>
 
 </body>
