@@ -1,4 +1,4 @@
-// ================== PDF IMPORT — EQUATORIAL (FINAL FUNCIONAL) ==================
+// ================== PDF IMPORT — EQUATORIAL (FINAL CORRETO) ==================
 
 async function importarFaturaEquatorial(file) {
   const arrayBuffer = await file.arrayBuffer();
@@ -15,9 +15,9 @@ async function importarFaturaEquatorial(file) {
   texto = texto.replace(/\s+/g, " ").toUpperCase();
 
   // ================== MÊS / ANO ==================
-  // Ex: DEZ/2025
+  // Ex: CONTA MÊS DEZ/2025
   let mesAno = "";
-  const mesMatch = texto.match(/\b(JAN|FEV|MAR|ABR|MAI|JUN|JUL|AGO|SET|OUT|NOV|DEZ)\/(\d{4})\b/);
+  const mesMatch = texto.match(/CONTA MÊS\s+(JAN|FEV|MAR|ABR|MAI|JUN|JUL|AGO|SET|OUT|NOV|DEZ)\/(\d{4})/);
 
   if (mesMatch) {
     const meses = {
@@ -28,45 +28,51 @@ async function importarFaturaEquatorial(file) {
     mesAno = `${meses[mesMatch[1]]}/${mesMatch[2]}`;
   }
 
-  // ================== VENCIMENTO ==================
-  // Padrão: 15/01/2026 R$*********120,31
+  // ================== VENCIMENTO REAL ==================
+  // Sempre vem junto do TOTAL A PAGAR
   let vencimento = "";
-  const vencMatch = texto.match(/(\d{2}\/\d{2}\/\d{4})\s+R\$\*+/);
+  const vencMatch = texto.match(/VENCIMENTO\s+(\d{2}\/\d{2}\/\d{4})/);
 
   if (vencMatch) {
     const [d, m, a] = vencMatch[1].split("/");
     vencimento = `${a}-${m}-${d}`;
   }
 
-  // ================== ENERGIA ATIVA ==================
-  // Última coluna da linha ENERGIA ATIVA - KWH
+  // ================== CONSUMO — COLUNA CORRETA ==================
+  // Energia Ativa → coluna "Consumo kWh"
   let consumoAtivo = 0;
-  const ativaMatch = texto.match(/ENERGIA ATIVA\s*-\s*KWH.*?(\d+)\b/);
+  const ativaMatch = texto.match(/ENERGIA ATIVA.*?CONSUMO\s*KWH\s*(\d+)/);
 
   if (ativaMatch) {
     consumoAtivo = Number(ativaMatch[1]);
   }
 
-  // ================== ENERGIA GERAÇÃO (SOLAR) ==================
+  // Energia Geração (solar)
   let energiaGeracao = 0;
-  const geracaoMatch = texto.match(/ENERGIA GERAÇÃO\s*-\s*KWH.*?(\d+)\b/);
+  const geracaoMatch = texto.match(/ENERGIA GERAÇÃO.*?CONSUMO\s*KWH\s*(\d+)/);
 
   if (geracaoMatch) {
     energiaGeracao = Number(geracaoMatch[1]);
   }
 
+  // Consumo Total (ativo + geração)
+  const consumoTotal = consumoAtivo + energiaGeracao;
+
   // ================== VALOR TOTAL ==================
   let valor = null;
-  const valorMatch = texto.match(/R\$\*+([\d.,]+)/);
+  const valorMatch = texto.match(/TOTAL A PAGAR\s*R?\$?\s*([\d.,]+)/);
 
   if (valorMatch) {
-    valor = Number(valorMatch[1].replace(".", "").replace(",", "."));
+    valor = Number(
+      valorMatch[1].replace(".", "").replace(",", ".")
+    );
   }
 
   return {
     mes_ano: mesAno,
     vencimento,
-    consumo_kwh: consumoAtivo,
+    consumo_kwh: consumoTotal,        // 👉 ESTE VAI PARA O CAMPO
+    consumo_ativo_kwh: consumoAtivo,  // técnico / futuro relatório
     energia_geracao_kwh: energiaGeracao,
     valor
   };
