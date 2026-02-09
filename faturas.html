@@ -158,47 +158,55 @@ async function lerPDF(event) {
 function extrairDadosEquatorial(texto) {
   texto = texto.replace(/\s+/g, " ").toUpperCase();
 
-  // MÊS / ANO (ex: 01/2026 ou 2026-01)
-  const mesAno =
-    texto.match(/(\d{2}\/\d{4})/) ||
-    texto.match(/(\d{4}-\d{2})/);
+  // ================== MÊS / ANO ==================
+  // Ex: CONTA MÊS DEZ/2025
+  const mesMatch = texto.match(/CONTA MÊS\s+([A-Z]{3})\/(\d{4})/);
 
-  // VENCIMENTO
-  const venc =
-    texto.match(/VENCIMENTO\s*(\d{2}\/\d{2}\/\d{4})/) ||
-    texto.match(/VENC\.?\s*(\d{2}\/\d{2}\/\d{4})/);
+  if (mesMatch) {
+    const meses = {
+      JAN: "01", FEV: "02", MAR: "03", ABR: "04",
+      MAI: "05", JUN: "06", JUL: "07", AGO: "08",
+      SET: "09", OUT: "10", NOV: "11", DEZ: "12"
+    };
 
-  // CONSUMO (kWh)
-  const consumo =
-    texto.match(/(\d+[.,]?\d*)\s*KWH/) ||
-    texto.match(/ENERGIA\s+ATIVA\s*(\d+[.,]?\d*)/);
+    const mesNum = meses[mesMatch[1]];
+    const ano = mesMatch[2];
 
-  // VALOR TOTAL
-  const valor =
-    texto.match(/TOTAL\s*A\s*PAGAR\s*R?\$?\s*([\d.,]+)/) ||
-    texto.match(/VALOR\s*TOTAL\s*R?\$?\s*([\d.,]+)/) ||
-    texto.match(/R\$\s*([\d.,]+)/);
-
-  if (mesAno) {
-    const v = mesAno[1].includes("/")
-      ? mesAno[1].split("/").reverse().join("-")
-      : mesAno[1];
-    document.getElementById("mesAno").value = v;
+    // formato 12/2025 (como você pediu)
+    document.getElementById("mesAno").value = `${mesNum}/${ano}`;
   }
 
-  if (venc) {
-    document.getElementById("vencimento").value =
-      venc[1].split("/").reverse().join("-");
+  // ================== VENCIMENTO ==================
+  const vencMatch = texto.match(/VENCIMENTO\s+(\d{2}\/\d{2}\/\d{4})/);
+  if (vencMatch) {
+    const [d, m, a] = vencMatch[1].split("/");
+    document.getElementById("vencimento").value = `${a}-${m}-${d}`;
   }
 
-  if (consumo) {
-    document.getElementById("consumo").value =
-      consumo[1].replace(".", "").replace(",", ".");
+  // ================== CONSUMO ==================
+  // Energia Ativa
+  const ativaMatch = texto.match(/ENERGIA ATIVA.*?(\d+)\s*KWH/);
+  const energiaAtiva = ativaMatch ? Number(ativaMatch[1]) : 0;
+
+  // Energia Geração (solar)
+  const geracaoMatch = texto.match(/ENERGIA GERAÇÃO.*?(\d+)\s*KWH/);
+  const energiaGeracao = geracaoMatch ? Number(geracaoMatch[1]) : 0;
+
+  // 👉 consumo exibido = ENERGIA ATIVA (padrão correto)
+  if (energiaAtiva) {
+    document.getElementById("consumo").value = energiaAtiva;
   }
 
-  if (valor) {
+  // (log técnico — depois podemos salvar no banco)
+  if (energiaGeracao) {
+    console.log("Energia solar (kWh):", energiaGeracao);
+  }
+
+  // ================== VALOR TOTAL ==================
+  const totalMatch = texto.match(/TOTAL A PAGAR\s*R?\$?\s*([\d.,]+)/);
+  if (totalMatch) {
     document.getElementById("valor").value =
-      valor[1].replace(".", "").replace(",", ".");
+      totalMatch[1].replace(".", "").replace(",", ".");
   }
 }
 
@@ -206,4 +214,5 @@ function extrairDadosEquatorial(texto) {
 
 </body>
 </html>
+
 
