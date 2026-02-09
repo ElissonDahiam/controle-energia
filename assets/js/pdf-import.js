@@ -1,8 +1,7 @@
-// ================== PDF IMPORT — EQUATORIAL (ROBUSTO) ==================
+// ================== PDF IMPORT — EQUATORIAL (DEFINITIVO) ==================
 
 async function importarFaturaEquatorial(file) {
   const buffer = await file.arrayBuffer();
-
   const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
 
   let texto = "";
@@ -16,9 +15,9 @@ async function importarFaturaEquatorial(file) {
   texto = texto.replace(/\s+/g, " ").toUpperCase();
 
   // ================== MÊS / ANO ==================
-  // Ex: DEZ/2025
+  // Ex: DEZ/2025 (campo "Conta mês")
   let mes_ano = "";
-  const mesMatch = texto.match(/\b(JAN|FEV|MAR|ABR|MAI|JUN|JUL|AGO|SET|OUT|NOV|DEZ)\/\d{4}\b/);
+  const mesMatch = texto.match(/CONTA MÊS\s*(JAN|FEV|MAR|ABR|MAI|JUN|JUL|AGO|SET|OUT|NOV|DEZ)\/(\d{4})/);
 
   if (mesMatch) {
     const meses = {
@@ -26,30 +25,31 @@ async function importarFaturaEquatorial(file) {
       MAI: "05", JUN: "06", JUL: "07", AGO: "08",
       SET: "09", OUT: "10", NOV: "11", DEZ: "12"
     };
-    const [mesTxt, ano] = mesMatch[0].split("/");
-    mes_ano = `${meses[mesTxt]}/${ano}`;
+    mes_ano = `${meses[mesMatch[1]]}/${mesMatch[2]}`;
   }
 
-  // ================== VENCIMENTO ==================
+  // ================== VENCIMENTO (CORRETO) ==================
+  // Busca EXPLICITAMENTE o rótulo VENCIMENTO
   let vencimento = "";
-  const vencMatch = texto.match(/\b\d{2}\/\d{2}\/\d{4}\b/);
+  const vencMatch = texto.match(/VENCIMENTO\s*(\d{2}\/\d{2}\/\d{4})/);
+
   if (vencMatch) {
-    const [d, m, a] = vencMatch[0].split("/");
+    const [d, m, a] = vencMatch[1].split("/");
     vencimento = `${a}-${m}-${d}`;
   }
 
-  // ================== ENERGIA ATIVA ==================
+  // ================== CONSUMO — ENERGIA ATIVA ==================
   let consumo_kwh = 0;
-  const ativaLine = texto.match(/ENERGIA ATIVA[^0-9]*(\d+)\s*KWH/);
-  if (ativaLine) {
-    consumo_kwh = Number(ativaLine[1]);
+  const ativaMatch = texto.match(/ENERGIA ATIVA[^0-9]*(\d+)\s*KWH/);
+  if (ativaMatch) {
+    consumo_kwh = Number(ativaMatch[1]);
   }
 
   // ================== ENERGIA GERAÇÃO (SOLAR) ==================
   let energia_geracao_kwh = 0;
-  const geracaoLine = texto.match(/ENERGIA GERAÇÃO[^0-9]*(\d+)\s*KWH/);
-  if (geracaoLine) {
-    energia_geracao_kwh = Number(geracaoLine[1]);
+  const geracaoMatch = texto.match(/ENERGIA GERAÇÃO[^0-9]*(\d+)\s*KWH/);
+  if (geracaoMatch) {
+    energia_geracao_kwh = Number(geracaoMatch[1]);
   }
 
   // ================== TOTAL A PAGAR ==================
@@ -57,7 +57,10 @@ async function importarFaturaEquatorial(file) {
   const totalMatch = texto.match(/TOTAL A PAGAR[^0-9]*([\d.,]+)/);
   if (totalMatch) {
     valor = Number(
-      totalMatch[1].replace(/\./g, "").replace(",", ".")
+      totalMatch[1]
+        .replace(/\*/g, "")
+        .replace(/\./g, "")
+        .replace(",", ".")
     );
   }
 
