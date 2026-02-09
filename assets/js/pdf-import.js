@@ -1,78 +1,76 @@
-// ================== PDF IMPORT — EQUATORIAL (FINAL CORRETO) ==================
+// ================== PDF IMPORT — EQUATORIAL (CORRETO DEFINITIVO) ==================
 
 async function importarFaturaEquatorial(file) {
   const arrayBuffer = await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
 
-  let texto = "";
+  let linhas = [];
 
   for (let i = 1; i <= pdf.numPages; i++) {
     const page = await pdf.getPage(i);
     const content = await page.getTextContent();
-    texto += content.items.map(item => item.str).join(" ") + " ";
+    content.items.forEach(item => {
+      linhas.push(item.str.trim().toUpperCase());
+    });
   }
 
-  texto = texto.replace(/\s+/g, " ").toUpperCase();
-
   // ================== MÊS / ANO ==================
-  // Ex: CONTA MÊS DEZ/2025
   let mesAno = "";
-  const mesMatch = texto.match(/CONTA MÊS\s+(JAN|FEV|MAR|ABR|MAI|JUN|JUL|AGO|SET|OUT|NOV|DEZ)\/(\d{4})/);
-
-  if (mesMatch) {
+  const mesLinha = linhas.find(l => l.match(/(JAN|FEV|MAR|ABR|MAI|JUN|JUL|AGO|SET|OUT|NOV|DEZ)\/\d{4}/));
+  if (mesLinha) {
+    const match = mesLinha.match(/(JAN|FEV|MAR|ABR|MAI|JUN|JUL|AGO|SET|OUT|NOV|DEZ)\/(\d{4})/);
     const meses = {
       JAN: "01", FEV: "02", MAR: "03", ABR: "04",
       MAI: "05", JUN: "06", JUL: "07", AGO: "08",
       SET: "09", OUT: "10", NOV: "11", DEZ: "12"
     };
-    mesAno = `${meses[mesMatch[1]]}/${mesMatch[2]}`;
+    mesAno = `${meses[match[1]]}/${match[2]}`;
   }
 
   // ================== VENCIMENTO REAL ==================
-  // Sempre vem junto do TOTAL A PAGAR
   let vencimento = "";
-  const vencMatch = texto.match(/VENCIMENTO\s+(\d{2}\/\d{2}\/\d{4})/);
-
-  if (vencMatch) {
-    const [d, m, a] = vencMatch[1].split("/");
-    vencimento = `${a}-${m}-${d}`;
+  const vencLinha = linhas.find(l => l.startsWith("VENCIMENTO"));
+  if (vencLinha) {
+    const m = vencLinha.match(/(\d{2}\/\d{2}\/\d{4})/);
+    if (m) {
+      const [d, mth, a] = m[1].split("/");
+      vencimento = `${a}-${mth}-${d}`;
+    }
   }
 
-  // ================== CONSUMO — COLUNA CORRETA ==================
-  // Energia Ativa → coluna "Consumo kWh"
+  // ================== CONSUMOS ==================
   let consumoAtivo = 0;
-  const ativaMatch = texto.match(/ENERGIA ATIVA.*?CONSUMO\s*KWH\s*(\d+)/);
-
-  if (ativaMatch) {
-    consumoAtivo = Number(ativaMatch[1]);
-  }
-
-  // Energia Geração (solar)
   let energiaGeracao = 0;
-  const geracaoMatch = texto.match(/ENERGIA GERAÇÃO.*?CONSUMO\s*KWH\s*(\d+)/);
 
-  if (geracaoMatch) {
-    energiaGeracao = Number(geracaoMatch[1]);
+  for (let i = 0; i < linhas.length; i++) {
+    if (linhas[i].includes("ENERGIA ATIVA") && linhas[i + 1]?.includes("CONSUMO KWH")) {
+      const m = linhas[i + 1].match(/(\d+)/);
+      if (m) consumoAtivo = Number(m[1]);
+    }
+
+    if (linhas[i].includes("ENERGIA GERAÇÃO") && linhas[i + 1]?.includes("CONSUMO KWH")) {
+      const m = linhas[i + 1].match(/(\d+)/);
+      if (m) energiaGeracao = Number(m[1]);
+    }
   }
 
-  // Consumo Total (ativo + geração)
   const consumoTotal = consumoAtivo + energiaGeracao;
 
   // ================== VALOR TOTAL ==================
   let valor = null;
-  const valorMatch = texto.match(/TOTAL A PAGAR\s*R?\$?\s*([\d.,]+)/);
-
-  if (valorMatch) {
-    valor = Number(
-      valorMatch[1].replace(".", "").replace(",", ".")
-    );
+  const totalLinha = linhas.find(l => l.includes("TOTAL A PAGAR"));
+  if (totalLinha) {
+    const m = totalLinha.match(/([\d.,]+)/);
+    if (m) {
+      valor = Number(m[1].replace(".", "").replace(",", "."));
+    }
   }
 
   return {
     mes_ano: mesAno,
     vencimento,
-    consumo_kwh: consumoTotal,        // 👉 ESTE VAI PARA O CAMPO
-    consumo_ativo_kwh: consumoAtivo,  // técnico / futuro relatório
+    consumo_kwh: consumoTotal,        // 👉 este vai para o input
+    consumo_ativo_kwh: consumoAtivo,  // técnico
     energia_geracao_kwh: energiaGeracao,
     valor
   };
