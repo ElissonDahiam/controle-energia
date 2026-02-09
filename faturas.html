@@ -57,20 +57,15 @@
 
 </div>
 
-<!-- SUPABASE -->
 <script src="assets/js/supabase.js?v=7"></script>
-
-<!-- PDF.JS (VERSÃO ESTÁVEL UMD) -->
 <script src="assets/libs/pdf.min.js"></script>
 <script src="assets/js/pdf-import.js"></script>
 
-<!-- SCRIPT DA PÁGINA -->
 <script>
 async function carregarUnidades() {
-  const select = document.getElementById("unidadeSelect");
-  select.innerHTML = "";
-
+  unidadeSelect.innerHTML = "";
   const empresas = await listarEmpresas();
+
   for (const e of empresas) {
     const lojas = await listarLojas(e.id);
     for (const l of lojas) {
@@ -79,31 +74,28 @@ async function carregarUnidades() {
         const opt = document.createElement("option");
         opt.value = u.id;
         opt.textContent = `${e.nome} - ${l.nome} - UC ${u.uc}`;
-        select.appendChild(opt);
+        unidadeSelect.appendChild(opt);
       });
     }
   }
 
-  if (select.value) carregarFaturas(select.value);
+  if (unidadeSelect.value) carregarFaturas(unidadeSelect.value);
 }
 
 async function carregarFaturas(unidade_id) {
-  const lista = document.getElementById("listaFaturas");
-  lista.innerHTML = "";
-
+  listaFaturas.innerHTML = "";
   const faturas = await listarFaturas(unidade_id);
+
   faturas.forEach(f => {
     const li = document.createElement("li");
     li.textContent = `${f.mes_ano} | ${f.consumo_kwh} kWh | R$ ${f.valor}`;
-    lista.appendChild(li);
+    listaFaturas.appendChild(li);
   });
 }
 
 async function cadastrarFatura() {
-  const unidade_id = document.getElementById("unidadeSelect").value;
-
   const dados = {
-    unidade_id,
+    unidade_id: unidadeSelect.value,
     mes_ano: mesAno.value,
     vencimento: vencimento.value,
     consumo_kwh: Number(consumo.value),
@@ -116,7 +108,7 @@ async function cadastrarFatura() {
   }
 
   await salvarFatura(dados);
-  carregarFaturas(unidade_id);
+  carregarFaturas(dados.unidade_id);
 }
 
 unidadeSelect.addEventListener("change", e => {
@@ -128,4 +120,3 @@ carregarUnidades();
 
 </body>
 </html>
-
